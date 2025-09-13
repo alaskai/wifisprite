@@ -1,6 +1,6 @@
 import ssl
 import socket
-import requests
+# import requests
 import urllib3
 from datetime import datetime, timedelta
 import subprocess

@@ -3,6 +3,7 @@ from tkinter import ttk, scrolledtext, messagebox
 import threading
 import json
 from datetime import datetime
+from tkinter import font
 
 import sys
 import os
@@ -15,6 +16,7 @@ from honeypot_detector import HoneypotDetector
 from host_scanner import HostScanner
 from ssl_analyzer import SSLAnalyzer
 from dns_analyzer import DNSAnalyzer
+from port_scanner import PortScanner
 from advanced_report_generator import AdvancedReportGenerator
 import re
 
@@ -22,7 +24,24 @@ class WiFiSecurityTool:
     def __init__(self, root):
         self.root = root
         self.root.title("WiFi Security Analyzer - WiFi Sprite")
-        self.root.geometry("800x700")
+        self.root.geometry("900x750")
+        
+        # Configure dark theme
+        self._setup_dark_theme()
+        
+        # Define colors
+        self.colors = {
+            'bg_dark': '#2b2b2b',
+            'bg_medium': '#3c3c3c', 
+            'bg_light': '#4d4d4d',
+            'text_light': '#ffffff',
+            'text_gray': '#cccccc',
+            'accent': '#0078d4',
+            'success': '#107c10',
+            'warning': '#ff8c00',
+            'error': '#d13438',
+            'critical': '#8b0000'
+        }
         
         self.scanner = NetworkScanner()
         self.analyzer = SecurityAnalyzer()
@@ -31,9 +50,37 @@ class WiFiSecurityTool:
         self.host_scanner = HostScanner()
         self.ssl_analyzer = SSLAnalyzer()
         self.dns_analyzer = DNSAnalyzer()
+        self.port_scanner = PortScanner()
         self.advanced_reporter = AdvancedReportGenerator()
         
         self.setup_ui()
+    
+    def _setup_dark_theme(self):
+        """Configure dark theme for the application"""
+        style = ttk.Style()
+        
+        # Configure dark theme
+        style.theme_use('clam')
+        
+        # Configure colors
+        style.configure('TFrame', background='#2b2b2b')
+        style.configure('TLabel', background='#2b2b2b', foreground='#ffffff')
+        style.configure('TButton', background='#4d4d4d', foreground='#ffffff')
+        style.configure('TCheckbutton', background='#2b2b2b', foreground='#ffffff')
+        style.configure('TLabelFrame', background='#2b2b2b', foreground='#ffffff')
+        style.configure('TLabelFrame.Label', background='#2b2b2b', foreground='#ffffff')
+        style.configure('TNotebook', background='#3c3c3c')
+        style.configure('TNotebook.Tab', background='#4d4d4d', foreground='#ffffff')
+        style.configure('TProgressbar', background='#0078d4')
+        
+        # Configure root window
+        self.root.configure(bg='#2b2b2b')
+        
+        # Map hover states
+        style.map('TButton',
+                 background=[('active', '#5d5d5d'), ('pressed', '#6d6d6d')])
+        style.map('TNotebook.Tab',
+                 background=[('selected', '#0078d4'), ('active', '#5d5d5d')])
         
     def setup_ui(self):
         """Setup the user interface"""
@@ -98,9 +145,23 @@ class WiFiSecurityTool:
                                          font=('Arial', 12, 'bold'))
         self.simple_risk_label.grid(row=0, column=0, pady=(0, 10))
         
-        # Results text
-        self.simple_results_text = scrolledtext.ScrolledText(results_frame, height=15, width=70)
+        # Results text with dark theme
+        self.simple_results_text = tk.Text(results_frame, height=15, width=70,
+                                          bg='#1e1e1e', fg='#ffffff', 
+                                          insertbackground='#ffffff',
+                                          selectbackground='#0078d4',
+                                          font=('Consolas', 10),
+                                          wrap=tk.WORD)
+        
+        # Add scrollbar
+        simple_scrollbar = ttk.Scrollbar(results_frame, orient=tk.VERTICAL, command=self.simple_results_text.yview)
+        self.simple_results_text.configure(yscrollcommand=simple_scrollbar.set)
+        
         self.simple_results_text.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        simple_scrollbar.grid(row=1, column=1, sticky=(tk.N, tk.S))
+        
+        # Configure text tags for colors
+        self._configure_text_tags(self.simple_results_text)
         
         # Buttons
         simple_buttons = ttk.Frame(self.simple_frame)
@@ -116,6 +177,20 @@ class WiFiSecurityTool:
         self.simple_frame.rowconfigure(2, weight=1)
         results_frame.columnconfigure(0, weight=1)
         results_frame.rowconfigure(1, weight=1)
+    
+    def _configure_text_tags(self, text_widget):
+        """Configure color tags for text widget"""
+        text_widget.tag_configure('critical', foreground='#ff4444', font=('Consolas', 10, 'bold'))
+        text_widget.tag_configure('high', foreground='#ff8800', font=('Consolas', 10, 'bold'))
+        text_widget.tag_configure('medium', foreground='#ffaa00', font=('Consolas', 10, 'bold'))
+        text_widget.tag_configure('low', foreground='#88dd88', font=('Consolas', 10, 'bold'))
+        text_widget.tag_configure('minimal', foreground='#44ff44', font=('Consolas', 10, 'bold'))
+        text_widget.tag_configure('header', foreground='#66ccff', font=('Consolas', 11, 'bold'))
+        text_widget.tag_configure('subheader', foreground='#aaccff', font=('Consolas', 10, 'bold'))
+        text_widget.tag_configure('warning', foreground='#ffcc44', font=('Consolas', 10, 'bold'))
+        text_widget.tag_configure('success', foreground='#44ff88', font=('Consolas', 10, 'bold'))
+        text_widget.tag_configure('info', foreground='#88ccff')
+        text_widget.tag_configure('emphasis', foreground='#ffffff', font=('Consolas', 10, 'bold'))
         
     def setup_advanced_tab(self):
         """Setup the advanced test tab"""
@@ -128,6 +203,7 @@ class WiFiSecurityTool:
         self.host_scan_var = tk.BooleanVar(value=True)
         self.ssl_scan_var = tk.BooleanVar(value=True)
         self.dns_scan_var = tk.BooleanVar(value=True)
+        self.port_scan_var = tk.BooleanVar(value=True)
         
         ttk.Checkbutton(control_frame, text="Honeypot Detection (Recommended)", 
                        variable=self.honeypot_var).grid(row=0, column=0, sticky=tk.W)
@@ -137,11 +213,13 @@ class WiFiSecurityTool:
                        variable=self.ssl_scan_var).grid(row=2, column=0, sticky=tk.W)
         ttk.Checkbutton(control_frame, text="DNS Security Testing", 
                        variable=self.dns_scan_var).grid(row=3, column=0, sticky=tk.W)
+        ttk.Checkbutton(control_frame, text="Port Security Scanning", 
+                       variable=self.port_scan_var).grid(row=4, column=0, sticky=tk.W)
         
         # Scan button
         self.advanced_scan_button = ttk.Button(control_frame, text="Run Advanced Security Scan", 
                                              command=self.run_advanced_scan)
-        self.advanced_scan_button.grid(row=4, column=0, pady=(10, 0))
+        self.advanced_scan_button.grid(row=5, column=0, pady=(10, 0))
         
         # Progress bar
         self.advanced_progress = ttk.Progressbar(self.advanced_frame, mode='indeterminate')
@@ -160,9 +238,23 @@ class WiFiSecurityTool:
                                            font=('Arial', 12, 'bold'))
         self.advanced_risk_label.grid(row=0, column=0, pady=(0, 10))
         
-        # Results text
-        self.advanced_results_text = scrolledtext.ScrolledText(results_frame, height=12, width=70)
+        # Results text with dark theme
+        self.advanced_results_text = tk.Text(results_frame, height=12, width=70,
+                                            bg='#1e1e1e', fg='#ffffff',
+                                            insertbackground='#ffffff',
+                                            selectbackground='#0078d4',
+                                            font=('Consolas', 10),
+                                            wrap=tk.WORD)
+        
+        # Add scrollbar
+        advanced_scrollbar = ttk.Scrollbar(results_frame, orient=tk.VERTICAL, command=self.advanced_results_text.yview)
+        self.advanced_results_text.configure(yscrollcommand=advanced_scrollbar.set)
+        
         self.advanced_results_text.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        advanced_scrollbar.grid(row=1, column=1, sticky=(tk.N, tk.S))
+        
+        # Configure text tags for colors
+        self._configure_text_tags(self.advanced_results_text)
         
         # Buttons
         advanced_buttons = ttk.Frame(self.advanced_frame)
@@ -267,6 +359,16 @@ class WiFiSecurityTool:
                 self._update_status_safe("Testing DNS security and integrity...")
                 dns_results = self._perform_dns_analysis()
                 advanced_results['dns'] = dns_results
+                
+            if self.port_scan_var.get():
+                self._update_status_safe("Scanning for dangerous open ports...")
+                port_results = self._perform_port_analysis()
+                advanced_results['ports'] = port_results
+                
+            if self.port_scan_var.get():
+                self._update_status_safe("Scanning for dangerous open ports...")
+                port_results = self._perform_port_analysis()
+                advanced_results['ports'] = port_results
                 
             # Combine all results
             analysis['advanced'] = advanced_results
@@ -422,11 +524,16 @@ Use responsibly and ethically.
     
     def _update_simple_results(self, network_info, analysis, report):
         risk_level = analysis['overall_risk']
-        risk_colors = {'HIGH': 'red', 'MEDIUM': 'orange', 'LOW': 'yellow', 'MINIMAL': 'green'}
+        risk_colors = {'CRITICAL': '#ff4444', 'HIGH': '#ff8800', 'MEDIUM': '#ffaa00', 'LOW': '#88dd88', 'MINIMAL': '#44ff44'}
+        
+        # Update risk label with color
         self.simple_risk_label.config(text=f"Security Status: {risk_level} RISK", 
-                                     foreground=risk_colors.get(risk_level, 'black'))
+                                     foreground=risk_colors.get(risk_level, '#ffffff'))
+        
+        # Clear and insert colored text
         self.simple_results_text.delete(1.0, tk.END)
-        self.simple_results_text.insert(tk.END, report)
+        self._insert_colored_report(self.simple_results_text, report, risk_level)
+        
         self.current_simple_analysis = {'network': network_info, 'analysis': analysis, 'report': report}
     
     def _stop_simple_progress_safe(self):
@@ -454,11 +561,17 @@ Use responsibly and ethically.
         risk_level = analysis['overall_risk']
         if 'honeypot' in advanced_results and advanced_results['honeypot'].get('is_honeypot'):
             risk_level = 'CRITICAL'
-        risk_colors = {'CRITICAL': 'red', 'HIGH': 'red', 'MEDIUM': 'orange', 'LOW': 'yellow', 'MINIMAL': 'green'}
+        
+        risk_colors = {'CRITICAL': '#ff4444', 'HIGH': '#ff8800', 'MEDIUM': '#ffaa00', 'LOW': '#88dd88', 'MINIMAL': '#44ff44'}
+        
+        # Update risk label with color
         self.advanced_risk_label.config(text=f"Security Status: {risk_level} RISK", 
-                                       foreground=risk_colors.get(risk_level, 'black'))
+                                       foreground=risk_colors.get(risk_level, '#ffffff'))
+        
+        # Clear and insert colored text
         self.advanced_results_text.delete(1.0, tk.END)
-        self.advanced_results_text.insert(tk.END, report)
+        self._insert_colored_report(self.advanced_results_text, report, risk_level)
+        
         self.current_advanced_analysis = {'network': network_info, 'analysis': analysis, 'report': report}
     
     def _stop_advanced_progress_safe(self):
@@ -537,6 +650,53 @@ Use responsibly and ethically.
                 'security_issues': [],
                 'recommendations': ['DNS analysis failed - check network connection']
             }
+    
+    def _perform_port_analysis(self):
+        """Perform port security analysis"""
+        try:
+            return self.port_scanner.scan_network_ports(scan_type='common', timeout=1)
+        except Exception as e:
+            return {
+                'error': str(e),
+                'open_ports': [],
+                'dangerous_ports': [],
+                'security_issues': [],
+                'recommendations': ['Port scan failed - check network connection']
+            }
+    
+    def _insert_colored_report(self, text_widget, report, risk_level):
+        """Insert report with color formatting"""
+        lines = report.split('\n')
+        
+        for line in lines:
+            # Determine line type and apply appropriate color
+            if line.startswith('='):
+                text_widget.insert(tk.END, line + '\n', 'header')
+            elif line.startswith('-'):
+                text_widget.insert(tk.END, line + '\n', 'subheader')
+            elif '🚨' in line or 'CRITICAL' in line:
+                text_widget.insert(tk.END, line + '\n', 'critical')
+            elif '🔴' in line or 'HIGH RISK' in line:
+                text_widget.insert(tk.END, line + '\n', 'high')
+            elif '🟠' in line or 'MEDIUM RISK' in line:
+                text_widget.insert(tk.END, line + '\n', 'medium')
+            elif '🟡' in line or 'LOW RISK' in line:
+                text_widget.insert(tk.END, line + '\n', 'low')
+            elif '🟢' in line or 'MINIMAL RISK' in line:
+                text_widget.insert(tk.END, line + '\n', 'minimal')
+            elif '✅' in line or 'SUCCESS' in line:
+                text_widget.insert(tk.END, line + '\n', 'success')
+            elif '⚠️' in line or 'WARNING' in line:
+                text_widget.insert(tk.END, line + '\n', 'warning')
+            elif line.strip().endswith(':') and not line.startswith(' '):
+                text_widget.insert(tk.END, line + '\n', 'emphasis')
+            elif '•' in line or '  ' in line:
+                text_widget.insert(tk.END, line + '\n', 'info')
+            else:
+                text_widget.insert(tk.END, line + '\n')
+        
+        # Scroll to top
+        text_widget.see(tk.INSERT)
 
 def main():
     """Main entry point for the application"""

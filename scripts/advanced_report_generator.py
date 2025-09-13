@@ -46,6 +46,10 @@ class AdvancedReportGenerator:
         if 'hosts' in advanced:
             report.extend(self._format_host_results(advanced['hosts']))
             
+        # Port Scanning Results
+        if 'ports' in advanced:
+            report.extend(self._format_port_results(advanced['ports']))
+            
         # Traffic Analysis Results
         if 'traffic' in advanced:
             report.extend(self._format_traffic_results(advanced['traffic']))
@@ -228,6 +232,51 @@ class AdvancedReportGenerator:
         report.append("")
         return report
     
+    def _format_port_results(self, port_results):
+        """Format port scanning results"""
+        report = []
+        report.append("NETWORK PORT SECURITY ANALYSIS")
+        report.append("-" * 35)
+        
+        open_ports = port_results.get('open_ports', [])
+        dangerous_ports = port_results.get('dangerous_ports', [])
+        
+        report.append(f"Open Ports Found: {len(open_ports)}")
+        report.append(f"Dangerous Ports: {len(dangerous_ports)}")
+        report.append(f"Target: {port_results.get('target', 'Unknown')}")
+        report.append("")
+        
+        if dangerous_ports:
+            report.append("🚨 DANGEROUS PORTS DETECTED:")
+            for port_info in dangerous_ports:
+                port = port_info.get('port', 'Unknown')
+                service = port_info.get('service', 'Unknown')
+                risk = port_info.get('risk', 'Unknown')
+                description = port_info.get('description', 'No description')
+                
+                risk_icon = "🚨" if risk == 'CRITICAL' else "🔴" if risk == 'HIGH' else "🟠"
+                report.append(f"  {risk_icon} Port {port} - {service} ({risk} RISK)")
+                report.append(f"     {description}")
+                
+                threats = port_info.get('threats', [])
+                if threats:
+                    report.append("     Potential Threats:")
+                    for threat in threats[:3]:  # Show first 3 threats
+                        report.append(f"       • {threat}")
+                report.append("")
+        else:
+            report.append("✅ No dangerous ports detected in scan")
+            
+        # Security issues
+        security_issues = port_results.get('security_issues', [])
+        if security_issues:
+            report.append("SECURITY ISSUES IDENTIFIED:")
+            for issue in security_issues:
+                report.append(f"  {issue}")
+            report.append("")
+            
+        return report
+    
     def _generate_security_recommendations(self, analysis_results):
         """Generate security recommendations based on analysis"""
         report = []
@@ -256,12 +305,18 @@ class AdvancedReportGenerator:
                 recommendations.append("⚠️ Large number of network devices detected")
                 recommendations.append("⚠️ Use VPN and avoid sensitive activities")
                 
-        # Traffic analysis recommendations
-        if 'traffic' in advanced:
-            traffic = advanced['traffic']
-            if traffic.get('suspicious_patterns') or traffic.get('security_issues'):
-                recommendations.append("🔒 Suspicious network activity detected")
-                recommendations.append("🔒 Enable VPN and monitor your connections")
+        # Port scanning recommendations
+        if 'ports' in advanced:
+            ports = advanced['ports']
+            dangerous_ports = ports.get('dangerous_ports', [])
+            if dangerous_ports:
+                critical_ports = [p for p in dangerous_ports if p.get('risk') == 'CRITICAL']
+                if critical_ports:
+                    recommendations.append("🚨 CRITICAL: Extremely dangerous ports detected")
+                    recommendations.append("🚨 Disconnect from network immediately")
+                else:
+                    recommendations.append("⚠️ Dangerous network ports detected")
+                    recommendations.append("🔒 Network may be compromised or misconfigured")
                 
         # General recommendations
         recommendations.extend([
