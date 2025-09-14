@@ -172,6 +172,11 @@ class WiFiSecurityTool:
         self.notebook.add(self.log_frame, text="📋 Network Log")
         self.setup_log_tab()
         
+        # Security Score Tab
+        self.score_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.score_frame, text="🏆 Security Score")
+        self.setup_score_tab()
+        
         # Configure grid weights
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
@@ -227,8 +232,10 @@ class WiFiSecurityTool:
         
         ttk.Button(simple_buttons, text="Save Report", 
                   command=lambda: self.save_report('simple')).grid(row=0, column=0, padx=(0, 10))
+        ttk.Button(simple_buttons, text="Log Network Details", 
+                  command=self.log_simple_network).grid(row=0, column=1, padx=(0, 10))
         ttk.Button(simple_buttons, text="Clear", 
-                  command=self.clear_simple_results).grid(row=0, column=1)
+                  command=self.clear_simple_results).grid(row=0, column=2)
         
         # Configure weights
         self.simple_frame.columnconfigure(0, weight=1)
@@ -320,10 +327,12 @@ class WiFiSecurityTool:
         
         ttk.Button(advanced_buttons, text="Save Technical Report", 
                   command=lambda: self.save_report('advanced')).grid(row=0, column=0, padx=(0, 10))
+        ttk.Button(advanced_buttons, text="Log Network Details", 
+                  command=self.log_advanced_network).grid(row=0, column=1, padx=(0, 10))
         ttk.Button(advanced_buttons, text="Clear", 
-                  command=self.clear_advanced_results).grid(row=0, column=1, padx=(0, 10))
+                  command=self.clear_advanced_results).grid(row=0, column=2, padx=(0, 10))
         ttk.Button(advanced_buttons, text="Help", 
-                  command=self.show_help).grid(row=0, column=2)
+                  command=self.show_help).grid(row=0, column=3)
         
         # Configure weights
         self.advanced_frame.columnconfigure(0, weight=1)
@@ -958,6 +967,17 @@ Use responsibly and ethically.
         
         # Store current network for logging
         self.current_network_for_log = {'network': network, 'analysis': analysis}
+        
+        # Add points for scanning
+        points = self.safe_scanner.add_scan_points(analysis)
+        self.safe_status_label.config(text=f"{status} (Score: {safety_score}/100) +{points} pts", 
+                                     foreground=color)
+        
+        # Refresh score display if tab exists
+        try:
+            self.refresh_score_display()
+        except:
+            pass
     
     def _update_safe_ui_safe(self, message):
         """Thread-safe safe scan UI update"""
@@ -1050,8 +1070,10 @@ Use responsibly and ethically.
         analysis = self.current_network_for_log['analysis']
         
         if self.safe_scanner.log_threat(network, analysis):
-            messagebox.showinfo("Network Logged", f"Network '{network.get('ssid', 'Unknown')}' has been logged.")
+            log_points = self.safe_scanner.add_log_points()
+            messagebox.showinfo("Network Logged", f"Network '{network.get('ssid', 'Unknown')}' logged! +{log_points} points")
             self.refresh_network_log()
+            self.refresh_score_display()
         else:
             messagebox.showinfo("Already Logged", "This network is already in the log or doesn't meet logging criteria.")
     
@@ -1093,6 +1115,130 @@ Use responsibly and ethically.
             messagebox.showinfo("Export Complete", f"Network log exported to: {filename}")
         except Exception as e:
             messagebox.showerror("Export Error", f"Failed to export log: {str(e)}")
+    
+    def setup_score_tab(self):
+        """Setup the security score tab"""
+        # Header frame
+        header_frame = ttk.LabelFrame(self.score_frame, text="Security Score & Achievements", padding="10")
+        header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), padx=10, pady=5)
+        
+        info_text = "Earn points by scanning networks and logging threats. Level up and unlock achievements!"
+        ttk.Label(header_frame, text=info_text, wraplength=600).grid(row=0, column=0, sticky=tk.W)
+        
+        # Score display frame
+        score_display_frame = ttk.LabelFrame(self.score_frame, text="Your Progress", padding="10")
+        score_display_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=5)
+        
+        # Score text widget
+        self.score_text = tk.Text(score_display_frame, height=15, width=60,
+                                 bg='#1e1e1e', fg='#ffffff',
+                                 insertbackground='#ffffff',
+                                 selectbackground='#0078d4',
+                                 font=('Consolas', 11),
+                                 wrap=tk.WORD)
+        
+        score_scrollbar = ttk.Scrollbar(score_display_frame, orient=tk.VERTICAL, command=self.score_text.yview)
+        self.score_text.configure(yscrollcommand=score_scrollbar.set)
+        
+        self.score_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        score_scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        
+        # Configure text tags for colors
+        self.score_text.tag_configure('level', foreground='#ffaa00', font=('Consolas', 12, 'bold'))
+        self.score_text.tag_configure('score', foreground='#44ff88', font=('Consolas', 11, 'bold'))
+        self.score_text.tag_configure('achievement', foreground='#ffcc44', font=('Consolas', 10, 'bold'))
+        self.score_text.tag_configure('stat', foreground='#88ccff')
+        
+        # Buttons frame
+        buttons_frame = ttk.Frame(self.score_frame)
+        buttons_frame.grid(row=2, column=0, pady=10)
+        
+        ttk.Button(buttons_frame, text="Refresh Score", 
+                  command=self.refresh_score_display).grid(row=0, column=0, padx=(0, 10))
+        ttk.Button(buttons_frame, text="Reset Score", 
+                  command=self.reset_score).grid(row=0, column=1)
+        
+        # Configure weights
+        self.score_frame.columnconfigure(0, weight=1)
+        self.score_frame.rowconfigure(1, weight=1)
+        score_display_frame.columnconfigure(0, weight=1)
+        score_display_frame.rowconfigure(0, weight=1)
+        
+        # Load initial score
+        self.refresh_score_display()
+    
+    def refresh_score_display(self):
+        """Refresh the security score display"""
+        try:
+            score_content = self.safe_scanner.get_score_summary()
+            self.score_text.delete(1.0, tk.END)
+            
+            # Insert with color formatting
+            lines = score_content.split('\n')
+            for line in lines:
+                if 'Level:' in line:
+                    self.score_text.insert(tk.END, line + '\n', 'level')
+                elif 'Total Score:' in line:
+                    self.score_text.insert(tk.END, line + '\n', 'score')
+                elif '🏆' in line:
+                    self.score_text.insert(tk.END, line + '\n', 'achievement')
+                elif '•' in line:
+                    self.score_text.insert(tk.END, line + '\n', 'stat')
+                else:
+                    self.score_text.insert(tk.END, line + '\n')
+        except Exception as e:
+            self.score_text.delete(1.0, tk.END)
+            self.score_text.insert(tk.END, f"Error loading score: {str(e)}")
+    
+    def reset_score(self):
+        """Reset the security score"""
+        result = messagebox.askyesno("Reset Score", "Are you sure you want to reset your security score and achievements?")
+        if result:
+            self.safe_scanner.user_score = {
+                'total_score': 0,
+                'networks_scanned': 0,
+                'threats_logged': 0,
+                'safe_networks_found': 0,
+                'level': 1,
+                'achievements': []
+            }
+            self.safe_scanner._save_score()
+            self.refresh_score_display()
+            messagebox.showinfo("Score Reset", "Your security score has been reset.")
+    
+    def log_simple_network(self):
+        """Log network from simple scan"""
+        if not hasattr(self, 'current_simple_analysis'):
+            messagebox.showwarning("No Network", "No network analyzed. Please run a simple scan first.")
+            return
+        
+        network = self.current_simple_analysis['network']
+        analysis = self.current_simple_analysis['analysis']
+        
+        if self.safe_scanner.log_threat(network, analysis, 'simple_scan'):
+            log_points = self.safe_scanner.add_log_points()
+            messagebox.showinfo("Network Logged", f"Network '{network.get('ssid', 'Unknown')}' logged from Simple Scan! +{log_points} points")
+            self.refresh_network_log()
+            self.refresh_score_display()
+        else:
+            messagebox.showinfo("Already Logged", "This network is already logged from Simple Scan.")
+    
+    def log_advanced_network(self):
+        """Log network from advanced scan"""
+        if not hasattr(self, 'current_advanced_analysis'):
+            messagebox.showwarning("No Network", "No network analyzed. Please run an advanced scan first.")
+            return
+        
+        network = self.current_advanced_analysis['network']
+        analysis = self.current_advanced_analysis['analysis']
+        
+        if self.safe_scanner.log_threat(network, analysis, 'advanced_scan'):
+            log_points = self.safe_scanner.add_log_points()
+            messagebox.showinfo("Network Logged", f"Network '{network.get('ssid', 'Unknown')}' logged from Advanced Scan! +{log_points} points")
+            self.refresh_network_log()
+            self.refresh_score_display()
+        else:
+            messagebox.showinfo("Already Logged", "This network is already logged from Advanced Scan.")
 
 def main():
     """Main entry point for the application"""

@@ -17,6 +17,8 @@ class SafeScanner:
         self.scanning = False
         self.threat_log_file = "dangerous_networks.json"
         self.threats = self._load_threats()
+        self.score_file = "security_score.json"
+        self.user_score = self._load_score()
         
     def discover_nearby_networks(self, scan_duration=10) -> List[Dict]:
         """Passively discover nearby WiFi networks without connecting"""
@@ -380,21 +382,24 @@ RISK ANALYSIS:
         except:
             return "Location unavailable"
     
-    def log_threat(self, network, analysis):
-        """Log a dangerous network"""
+    def log_threat(self, network, analysis, scan_type='safe_scan'):
+        """Log a network from any scan type"""
         threat = {
             'ssid': network.get('ssid', 'Unknown'),
             'mac_address': self._get_mac_address(network.get('ssid', '')),
             'location': self._get_location(),
             'timestamp': datetime.now().isoformat(),
+            'scan_type': scan_type,
             'safety_score': analysis.get('safety_score', 0),
-            'status': analysis.get('quarantine_status', ''),
+            'overall_risk': analysis.get('overall_risk', 'Unknown'),
+            'status': analysis.get('quarantine_status', analysis.get('overall_risk', 'Unknown')),
             'indicators': analysis.get('esp32_indicators', []),
+            'security_issues': analysis.get('security_issues', []),
             'signal_strength': network.get('signal_strength', 0)
         }
         
         # Check if already logged (avoid duplicates)
-        existing = next((t for t in self.threats if t['ssid'] == threat['ssid'] and t['mac_address'] == threat['mac_address']), None)
+        existing = next((t for t in self.threats if t['ssid'] == threat['ssid'] and t['scan_type'] == scan_type), None)
         if not existing:
             self.threats.append(threat)
             self._save_threats()
@@ -402,18 +407,143 @@ RISK ANALYSIS:
         return False
     
     def get_threat_summary(self):
-        """Get summary of logged threats"""
+        """Get summary of logged threats by scan type"""
         if not self.threats:
-            return "No networks logged yet.\n\nUse Safe Scan to analyze networks, then click 'Log Network Details' to add them here."
+            return "No networks logged yet.\n\nUse any scan mode to analyze networks, then click 'Log Network Details' to add them here."
+        
+        # Group by scan type
+        safe_scans = [t for t in self.threats if t.get('scan_type') == 'safe_scan']
+        simple_scans = [t for t in self.threats if t.get('scan_type') == 'simple_scan']
+        advanced_scans = [t for t in self.threats if t.get('scan_type') == 'advanced_scan']
         
         summary = f"=== NETWORK LOG SUMMARY ===\n"
         summary += f"Total networks logged: {len(self.threats)}\n\n"
         
-        for i, threat in enumerate(self.threats, 1):
-            summary += f"{i}. {threat['ssid']} ({threat['mac_address']})\n"
-            summary += f"   Location: {threat['location']}\n"
-            summary += f"   Status: {threat['status']}\n"
-            summary += f"   Safety Score: {threat['safety_score']}/100\n"
-            summary += f"   Date: {threat['timestamp'][:10]}\n\n"
+        if safe_scans:
+            summary += f"🛡️ SAFE SCAN NETWORKS ({len(safe_scans)}):\n"
+            for i, threat in enumerate(safe_scans, 1):
+                summary += f"{i}. {threat['ssid']} - {threat['status']}\n"
+                summary += f"   Score: {threat.get('safety_score', 0)}/100 | {threat['timestamp'][:10]}\n\n"
+        
+        if simple_scans:
+            summary += f"📊 SIMPLE SCAN NETWORKS ({len(simple_scans)}):\n"
+            for i, threat in enumerate(simple_scans, 1):
+                summary += f"{i}. {threat['ssid']} - {threat['status']}\n"
+                summary += f"   Risk: {threat.get('overall_risk', 'Unknown')} | {threat['timestamp'][:10]}\n\n"
+        
+        if advanced_scans:
+            summary += f"🔬 ADVANCED SCAN NETWORKS ({len(advanced_scans)}):\n"
+            for i, threat in enumerate(advanced_scans, 1):
+                summary += f"{i}. {threat['ssid']} - {threat['status']}\n"
+                summary += f"   Risk: {threat.get('overall_risk', 'Unknown')} | Issues: {len(threat.get('security_issues', []))}\n"
+                summary += f"   Date: {threat['timestamp'][:10]}\n\n"
+        
+        return summary
+    
+    def _load_score(self):
+        """Load user security score"""
+        if os.path.exists(self.score_file):
+            try:
+                with open(self.score_file, 'r') as f:
+                    return json.load(f)
+            except:
+                pass
+        return {
+            'total_score': 0,
+            'networks_scanned': 0,
+            'threats_logged': 0,
+            'safe_networks_found': 0,
+            'level': 1,
+            'achievements': []
+        }
+    
+    def _save_score(self):
+        """Save user security score"""
+        with open(self.score_file, 'w') as f:
+            json.dump(self.user_score, f, indent=2)
+    
+    def add_scan_points(self, analysis):
+        """Add points for scanning a network"""
+        self.user_score['networks_scanned'] += 1
+        
+        safety_score = analysis.get('safety_score', 0)
+        if safety_score >= 70:
+            # Safe network found
+            points = 10
+            self.user_score['safe_networks_found'] += 1
+        elif safety_score < 30:
+            # Dangerous network detected
+            points = 25
+        else:
+            # Suspicious network
+            points = 15
+        
+        self.user_score['total_score'] += points
+        self._check_achievements()
+        self._update_level()
+        self._save_score()
+        return points
+    
+    def add_log_points(self):
+        """Add points for logging a threat"""
+        self.user_score['threats_logged'] += 1
+        self.user_score['total_score'] += 50
+        self._check_achievements()
+        self._update_level()
+        self._save_score()
+        return 50
+    
+    def _update_level(self):
+        """Update user level based on score"""
+        score = self.user_score['total_score']
+        new_level = min(10, max(1, (score // 100) + 1))
+        self.user_score['level'] = new_level
+    
+    def _check_achievements(self):
+        """Check and award achievements"""
+        achievements = self.user_score['achievements']
+        
+        # First scan achievement
+        if self.user_score['networks_scanned'] >= 1 and 'First Scan' not in achievements:
+            achievements.append('First Scan')
+        
+        # Threat hunter achievements
+        if self.user_score['threats_logged'] >= 1 and 'Threat Hunter' not in achievements:
+            achievements.append('Threat Hunter')
+        
+        if self.user_score['threats_logged'] >= 5 and 'Security Expert' not in achievements:
+            achievements.append('Security Expert')
+        
+        # Scanner achievements
+        if self.user_score['networks_scanned'] >= 10 and 'Network Scout' not in achievements:
+            achievements.append('Network Scout')
+        
+        if self.user_score['networks_scanned'] >= 50 and 'WiFi Warrior' not in achievements:
+            achievements.append('WiFi Warrior')
+    
+    def get_score_summary(self):
+        """Get formatted score summary"""
+        score = self.user_score
+        level_names = ['Novice', 'Scout', 'Analyst', 'Expert', 'Specialist', 
+                      'Professional', 'Elite', 'Master', 'Legend', 'Guardian']
+        
+        summary = f"=== SECURITY SCORE ===\n"
+        summary += f"Level: {score['level']} - {level_names[score['level']-1]}\n"
+        summary += f"Total Score: {score['total_score']} points\n\n"
+        
+        summary += f"STATISTICS:\n"
+        summary += f"• Networks Scanned: {score['networks_scanned']}\n"
+        summary += f"• Safe Networks Found: {score['safe_networks_found']}\n"
+        summary += f"• Threats Logged: {score['threats_logged']}\n\n"
+        
+        if score['achievements']:
+            summary += f"ACHIEVEMENTS UNLOCKED:\n"
+            for achievement in score['achievements']:
+                summary += f"🏆 {achievement}\n"
+        else:
+            summary += f"No achievements yet - keep scanning!\n"
+        
+        next_level_score = score['level'] * 100
+        summary += f"\nNext Level: {next_level_score - score['total_score']} points to go\n"
         
         return summary
