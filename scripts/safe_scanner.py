@@ -15,9 +15,12 @@ class SafeScanner:
         self.discovered_networks = []
         self.quarantine_results = {}
         self.scanning = False
-        self.threat_log_file = "dangerous_networks.json"
+        # Set paths to assets directory
+        assets_dir = os.path.join(os.path.dirname(__file__), '..', 'assets')
+        os.makedirs(assets_dir, exist_ok=True)
+        self.threat_log_file = os.path.join(assets_dir, "dangerous_networks.json")
+        self.score_file = os.path.join(assets_dir, "security_score.json")
         self.threats = self._load_threats()
-        self.score_file = "security_score.json"
         self.user_score = self._load_score()
         
     def discover_nearby_networks(self, scan_duration=10) -> List[Dict]:
