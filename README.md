@@ -1,146 +1,196 @@
-# WiFi Sprite - WiFi Security Analyzer
+# WiFi Sprite - Advanced WiFi Security Analyzer
 
-A user-friendly, educational cybersecurity tool for analyzing WiFi network security safely and ethically.
+🛡️ **Professional-grade network security analysis tool designed for South Africa's unique cybersecurity landscape**
+
+A comprehensive, ethical cybersecurity tool that detects fake access points, honeypots, and network vulnerabilities commonly found in South African networks.
 
 ## 🎯 Purpose
 
-WiFi Sprite helps users understand the security risks of public WiFi networks through passive analysis and educational reporting. It's designed to be:
+WiFi Sprite provides advanced network security analysis to protect users from sophisticated threats including ESP32-based fake access points, DNS hijacking, and network surveillance - specifically targeting threats prevalent in South Africa.
 
-- **Safe**: Only passive scanning, no network attacks
-- **Educational**: Clear explanations of security concepts
-- **User-friendly**: Simple traffic light risk system
-- **Ethical**: Defensive security tool only
+**Key Benefits:**
+- 🔒 **Defensive Security**: Protects against network-based attacks
+- 📚 **Educational**: Learn about real-world cybersecurity threats
+- 🌍 **Localized**: Designed for South African threat landscape
+- ⚖️ **Ethical**: Completely passive and legal analysis
 
-## 🔍 Features
+## ✨ Features
 
-### Security Analysis
-- **Encryption Detection**: Identifies WEP/WPA/WPA2/WPA3 encryption
-- **Risk Assessment**: Color-coded security ratings (Red/Yellow/Green)
-- **Network Characteristics**: Analyzes suspicious naming patterns
-- **Captive Portal Detection**: Identifies public network indicators
+### 🔍 **Simple Security Tests**
+- **WiFi Encryption Analysis**: WEP/WPA/WPA2/WPA3 detection
+- **Network Risk Assessment**: Color-coded threat levels
+- **Captive Portal Detection**: Identifies potentially malicious portals
+- **Basic Security Recommendations**: User-friendly guidance
 
-### Educational Components
-- **Plain Language Explanations**: No technical jargon
-- **Risk Explanations**: Why something is dangerous
-- **Actionable Recommendations**: What users should do
-- **Security Education**: General WiFi safety tips
+### 🚀 **Advanced Security Tests**
+- **🕵️ Honeypot Detection**: Detects ESP32 fake access points and network traps
+- **🌐 Host Discovery**: Identifies suspicious devices on the network
+- **🔐 SSL/TLS Analysis**: Certificate validation and MITM detection
+- **🌍 DNS Security Testing**: DNS hijacking and manipulation detection
+- **🔓 Port Security Scanning**: Identifies dangerous open ports and services
 
-### User Interface
-- **Simple GUI**: Easy-to-use graphical interface
-- **Real-time Analysis**: Analyze current network connection
-- **Detailed Reports**: Comprehensive security assessments
-- **Export Functionality**: Save reports for reference
+### 🛡️ **Safe Scan Mode** *(NEW)*
+- **🔍 Passive Network Discovery**: Finds nearby open networks WITHOUT connecting
+- **⚡ ESP32/Arduino Detection**: Identifies DIY honeypot devices by signature
+- **🚨 Quarantined Analysis**: Analyzes network safety before any connection
+- **📊 Risk Scoring**: 0-100 safety score with detailed recommendations
+- **🛡️ Zero-Risk Assessment**: Complete analysis without network exposure
 
-## 🚀 Installation
+### 🎨 **Professional Interface**
+- **Dark Theme**: Modern, professional appearance
+- **Colored Reports**: Syntax-highlighted security analysis
+- **Tabbed Interface**: Simple vs Advanced testing modes
+- **Real-time Status**: Dynamic progress and risk indicators
 
-1. **Install Python 3.7+**
-2. **Install Dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. **Run the Application**:
-   ```bash
-   python main.py
-   ```
+## 🚀 Quick Start
+
+### **Option 1: One-Click Install (Recommended)**
+```bash
+# Clone the repository
+git clone https://github.com/your-username/wifi-sprite.git
+cd wifi-sprite
+
+# Run the installer
+install.bat
+```
+
+### **Option 2: Manual Setup**
+```bash
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the application
+python src/main.py
+```
+
+### **Option 3: Direct Run**
+```bash
+# Quick start without installation
+run.bat
+```
 
 ## 📋 Requirements
 
-- Windows 10/11 (uses netsh commands)
-- Python 3.7 or higher
-- Administrator privileges (for network scanning)
+- **Windows 10/11** (optimized for Windows networking)
+- **Python 3.7+** with pip
+- **Network Access** (WiFi connection required for testing)
+- **Administrator Privileges** (for advanced network scanning)
 
-## 🛡️ Security Tests
+## 🛡️ Security Analysis Capabilities
 
-### Passive Analysis Only
-- Encryption type detection
-- Signal strength measurement
-- Network name pattern analysis
-- Captive portal checking
-- No active network attacks or intrusion
+### **Threat Detection**
+- **Fake Access Points**: ESP32-based honeypots common in SA
+- **DNS Manipulation**: Hijacking and redirection attacks
+- **SSL Interception**: Man-in-the-middle certificate attacks
+- **Port Vulnerabilities**: Dangerous services and backdoors
+- **Network Surveillance**: Traffic monitoring detection
 
-### Risk Factors Evaluated
-- **Encryption Strength**: WEP (high risk) to WPA3 (low risk)
-- **Network Naming**: Suspicious patterns like "Free WiFi"
-- **Signal Characteristics**: Unusual signal strength patterns
-- **Public Network Indicators**: Captive portals, open access
+### **Risk Assessment**
+- 🚨 **DANGEROUS**: Do not connect - likely honeypot/fake AP
+- ⚠️ **SUSPICIOUS**: Use extreme caution - multiple risk indicators
+- ✅ **RELATIVELY SAFE**: Monitor connection - standard precautions
+- 🔴 **CRITICAL**: Immediate disconnect required (connected networks)
+- 🟠 **HIGH**: Dangerous - avoid sensitive activities
+- 🟡 **MEDIUM**: Caution advised - use VPN
+- 🟢 **LOW**: Generally safe with precautions
+- 🟢 **MINIMAL**: Secure network
 
-## 🎓 Educational Value
-
-### Security Concepts Explained
-- What WiFi encryption means
-- Why VPNs are important
-- How to identify secure networks
-- General WiFi safety practices
-
-### Risk Communication
-- **High Risk**: Red - Avoid sensitive activities
-- **Medium Risk**: Orange - Use VPN, be cautious
-- **Low Risk**: Yellow - Generally safe with precautions
-- **Minimal Risk**: Green - Secure network
-
-## 📊 Sample Output
+## 📊 Sample Advanced Report
 
 ```
-=== WiFi Security Analysis Report ===
-Network: CoffeeShop_Guest
+============================================================
+ADVANCED WIFI SECURITY ANALYSIS REPORT
+============================================================
+Network: FreeWiFi_Hotspot
 Scan Time: 2024-01-15 14:30:22
 
-OVERALL SECURITY RATING: HIGH
-Risk Score: 85/100
+🔴 CRITICAL RISK LEVEL: CRITICAL
+Risk Score: 95/100
 
-🔴 HIGH RISK: This network poses significant security threats.
+HONEYPOT DETECTION ANALYSIS
+------------------------------
+🚨 POTENTIAL HONEYPOT DETECTED (Confidence: 85%)
 
---- ENCRYPTION ANALYSIS ---
-Encryption Type: NONE
-Security Strength: NONE
-Description: Open network with no security
+Suspicious Indicators:
+  • ESP32 device detected as gateway
+  • No actual internet connectivity
+  • DNS returns fake responses
+  • Artificially consistent response times
 
---- RECOMMENDATIONS ---
-1. 💡 DO NOT use this network for sensitive activities
-2. 💡 Use a VPN if you must connect
-3. 💡 Avoid accessing banking, email, or personal accounts
-4. 💡 Consider using mobile data instead
+NETWORK PORT SECURITY ANALYSIS
+-----------------------------------
+🚨 DANGEROUS PORTS DETECTED:
+  🚨 Port 23 - Telnet (CRITICAL RISK)
+     Unencrypted remote access - sends passwords in plain text
+     Potential Threats:
+       • Password interception
+       • Complete system compromise
+
+SECURITY RECOMMENDATIONS:
+----------------------------
+  🚨 CRITICAL: Potential honeypot detected - disconnect immediately
+  🚨 Do not enter any personal information or credentials
+  🚨 Report this network to local authorities if suspicious
 ```
 
-## ⚖️ Legal and Ethical Use
+## 🔧 Technical Architecture
 
-### Intended Use
-- **Educational purposes**: Learning about WiFi security
-- **Defensive security**: Protecting your own devices
-- **Network assessment**: Evaluating networks you're authorized to use
+```
+src/
+├── main.py                     # Main GUI application
+└── scripts/
+    ├── network_scanner.py      # WiFi network detection
+    ├── security_analyzer.py    # Basic security analysis
+    ├── honeypot_detector.py    # Advanced honeypot detection
+    ├── host_scanner.py         # Network host discovery
+    ├── ssl_analyzer.py         # SSL/TLS security analysis
+    ├── dns_analyzer.py         # DNS security testing
+    ├── port_scanner.py         # Port security scanning
+    └── report_generator.py     # Report generation
+```
 
-### Prohibited Use
-- **Unauthorized access**: Don't test networks without permission
-- **Malicious activities**: No attacking or compromising networks
-- **Privacy violations**: Respect others' network privacy
+## 🌍 South African Context
 
-## 🔧 Technical Details
+### **Common Threats Detected**
+- **Shopping Mall WiFi Traps**: Fake hotspots in retail areas
+- **Coffee Shop Honeypots**: Malicious networks in public spaces
+- **Airport/Hotel Scams**: Credential harvesting networks
+- **ESP32 Devices**: Low-cost fake access point hardware
 
-### Architecture
-- **network_scanner.py**: WiFi network detection and information gathering
-- **security_analyzer.py**: Risk assessment and vulnerability analysis
-- **report_generator.py**: User-friendly report generation
-- **main.py**: GUI application and user interface
+### **Localized Features**
+- **ISP Detection**: Identifies major SA internet providers
+- **DNS Server Analysis**: Tests against local DNS providers
+- **Regulatory Compliance**: Aligns with POPIA privacy requirements
 
-### Dependencies
-- **scapy**: Network packet analysis
-- **psutil**: System and network utilities
-- **requests**: HTTP requests for captive portal detection
-- **tkinter**: GUI framework (built into Python)
+## ⚖️ Legal & Ethical Use
+
+### ✅ **Permitted Uses**
+- Testing networks you own or have permission to test
+- Educational cybersecurity learning
+- Defensive security assessment
+- Personal network safety verification
+
+### ❌ **Prohibited Uses**
+- Unauthorized network penetration testing
+- Attacking or compromising networks
+- Violating others' privacy or network policies
+- Any illegal cybersecurity activities
 
 ## 🤝 Contributing
 
-This is an educational tool focused on defensive security. Contributions should maintain the ethical, educational focus:
+We welcome contributions that enhance the educational and defensive security value:
 
-1. All features must be passive/non-intrusive
-2. Include educational explanations
-3. Maintain user-friendly design
-4. Follow responsible disclosure practices
+1. **Ethical Focus**: All features must be passive and educational
+2. **South African Relevance**: Consider local threat landscape
+3. **User Safety**: Prioritize user protection and privacy
+4. **Code Quality**: Follow Python best practices
 
 ## 📄 License
 
-This project is for educational purposes. Use responsibly and in accordance with local laws and network policies.
+This project is licensed for educational and defensive security purposes. Users must comply with local laws and network policies.
 
 ## ⚠️ Disclaimer
 
-WiFi Sprite is designed for educational and defensive security purposes only. Users are responsible for ensuring their use complies with applicable laws and network policies. The tool performs only passive analysis and does not attempt to compromise or attack networks.
+WiFi Sprite is designed exclusively for educational and defensive cybersecurity purposes. Users are responsible for ensuring compliance with applicable laws, including South African cybersecurity regulations. The tool performs only passive analysis and does not attempt to compromise or attack networks.
+
+**Use responsibly. Protect yourself and others.**

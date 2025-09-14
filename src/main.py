@@ -4,6 +4,7 @@ import threading
 import json
 from datetime import datetime
 from tkinter import font
+from PIL import Image, ImageTk
 
 import sys
 import os
@@ -18,6 +19,7 @@ from ssl_analyzer import SSLAnalyzer
 from dns_analyzer import DNSAnalyzer
 from port_scanner import PortScanner
 from advanced_report_generator import AdvancedReportGenerator
+from safe_scanner import SafeScanner
 import re
 
 class WiFiSecurityTool:
@@ -25,6 +27,9 @@ class WiFiSecurityTool:
         self.root = root
         self.root.title("WiFi Security Analyzer - WiFi Sprite")
         self.root.geometry("900x750")
+        
+        # Set window icon
+        self._set_window_icon()
         
         # Configure dark theme
         self._setup_dark_theme()
@@ -52,6 +57,7 @@ class WiFiSecurityTool:
         self.dns_analyzer = DNSAnalyzer()
         self.port_scanner = PortScanner()
         self.advanced_reporter = AdvancedReportGenerator()
+        self.safe_scanner = SafeScanner()
         
         self.setup_ui()
     
@@ -81,6 +87,41 @@ class WiFiSecurityTool:
                  background=[('active', '#5d5d5d'), ('pressed', '#6d6d6d')])
         style.map('TNotebook.Tab',
                  background=[('selected', '#0078d4'), ('active', '#5d5d5d')])
+    
+    def _set_window_icon(self):
+        """Set the window icon from the assets folder"""
+        try:
+            icon_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'image.png')
+            if os.path.exists(icon_path):
+                # Load and resize icon for window
+                icon_image = Image.open(icon_path)
+                icon_image = icon_image.resize((32, 32), Image.Resampling.LANCZOS)
+                icon_photo = ImageTk.PhotoImage(icon_image)
+                self.root.iconphoto(True, icon_photo)
+                
+                # Store reference to prevent garbage collection
+                self.icon_photo = icon_photo
+        except Exception:
+            pass  # Silently fail if icon can't be loaded
+    
+    def _add_logo(self, parent_frame):
+        """Add logo to the header frame"""
+        try:
+            logo_path = os.path.join(os.path.dirname(__file__), '..', 'assets', 'image.png')
+            if os.path.exists(logo_path):
+                # Load and resize logo for header
+                logo_image = Image.open(logo_path)
+                logo_image = logo_image.resize((48, 48), Image.Resampling.LANCZOS)
+                logo_photo = ImageTk.PhotoImage(logo_image)
+                
+                # Create logo label
+                logo_label = ttk.Label(parent_frame, image=logo_photo)
+                logo_label.grid(row=0, column=0)
+                
+                # Store reference to prevent garbage collection
+                self.logo_photo = logo_photo
+        except Exception:
+            pass  # Silently fail if logo can't be loaded
         
     def setup_ui(self):
         """Setup the user interface"""
@@ -88,10 +129,17 @@ class WiFiSecurityTool:
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         
+        # Logo and Title frame
+        header_frame = ttk.Frame(main_frame)
+        header_frame.grid(row=0, column=0, columnspan=2, pady=(0, 20))
+        
+        # Add logo if available
+        self._add_logo(header_frame)
+        
         # Title
-        title_label = ttk.Label(main_frame, text="WiFi Security Analyzer - WiFi Sprite", 
+        title_label = ttk.Label(header_frame, text="WiFi Security Analyzer - WiFi Sprite", 
                                font=('Arial', 16, 'bold'))
-        title_label.grid(row=0, column=0, columnspan=2, pady=(0, 20))
+        title_label.grid(row=0, column=1, padx=(10, 0))
         
         # Current network frame
         current_frame = ttk.LabelFrame(main_frame, text="Current Network", padding="10")
@@ -113,6 +161,16 @@ class WiFiSecurityTool:
         self.advanced_frame = ttk.Frame(self.notebook)
         self.notebook.add(self.advanced_frame, text="Advanced Test")
         self.setup_advanced_tab()
+        
+        # Safe Scan Tab
+        self.safe_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.safe_frame, text="🛡️ Safe Scan")
+        self.setup_safe_tab()
+        
+        # Network Log Tab
+        self.log_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.log_frame, text="📋 Network Log")
+        self.setup_log_tab()
         
         # Configure grid weights
         self.root.columnconfigure(0, weight=1)
@@ -270,6 +328,97 @@ class WiFiSecurityTool:
         # Configure weights
         self.advanced_frame.columnconfigure(0, weight=1)
         self.advanced_frame.rowconfigure(3, weight=1)
+        results_frame.columnconfigure(0, weight=1)
+        results_frame.rowconfigure(1, weight=1)
+    
+    def setup_safe_tab(self):
+        """Setup the safe scan tab for analyzing nearby networks without connecting"""
+        # Info frame
+        info_frame = ttk.LabelFrame(self.safe_frame, text="Safe Scan Mode", padding="10")
+        info_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), padx=10, pady=5)
+        
+        info_text = "Analyze nearby open WiFi networks WITHOUT connecting. Detects ESP32 honeypots and fake access points."
+        ttk.Label(info_frame, text=info_text, wraplength=600).grid(row=0, column=0, sticky=tk.W)
+        
+        # Control frame
+        control_frame = ttk.LabelFrame(self.safe_frame, text="Network Discovery", padding="10")
+        control_frame.grid(row=1, column=0, columnspan=2, sticky=(tk.W, tk.E), padx=10, pady=5)
+        
+        # Scan button
+        self.safe_scan_button = ttk.Button(control_frame, text="Discover Nearby Open Networks", 
+                                         command=self.run_safe_discovery)
+        self.safe_scan_button.grid(row=0, column=0, padx=(0, 10))
+        
+        ttk.Label(control_frame, text="Passive scan - no connections made").grid(row=0, column=1, sticky=tk.W)
+        
+        # Progress bar
+        self.safe_progress = ttk.Progressbar(self.safe_frame, mode='indeterminate')
+        self.safe_progress.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E), padx=10, pady=5)
+        
+        # Networks list frame
+        networks_frame = ttk.LabelFrame(self.safe_frame, text="Discovered Open Networks", padding="10")
+        networks_frame.grid(row=3, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=5)
+        
+        # Networks listbox
+        self.networks_listbox = tk.Listbox(networks_frame, height=8, 
+                                          bg='#1e1e1e', fg='#ffffff',
+                                          selectbackground='#0078d4',
+                                          font=('Consolas', 10))
+        networks_scrollbar = ttk.Scrollbar(networks_frame, orient=tk.VERTICAL, command=self.networks_listbox.yview)
+        self.networks_listbox.configure(yscrollcommand=networks_scrollbar.set)
+        
+        self.networks_listbox.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        networks_scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        
+        # Analyze button
+        ttk.Button(networks_frame, text="Analyze Selected Network", 
+                  command=self.analyze_selected_network).grid(row=1, column=0, pady=(10, 0))
+        
+        # Results frame
+        results_frame = ttk.LabelFrame(self.safe_frame, text="Quarantine Analysis Results", padding="10")
+        results_frame.grid(row=3, column=1, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=5)
+        
+        # Safety status
+        self.safe_status_label = ttk.Label(results_frame, text="No Analysis Performed", 
+                                         font=('Arial', 12, 'bold'))
+        self.safe_status_label.grid(row=0, column=0, pady=(0, 10))
+        
+        # Results text
+        self.safe_results_text = tk.Text(results_frame, height=12, width=50,
+                                        bg='#1e1e1e', fg='#ffffff',
+                                        insertbackground='#ffffff',
+                                        selectbackground='#0078d4',
+                                        font=('Consolas', 9),
+                                        wrap=tk.WORD)
+        
+        safe_scrollbar = ttk.Scrollbar(results_frame, orient=tk.VERTICAL, command=self.safe_results_text.yview)
+        self.safe_results_text.configure(yscrollcommand=safe_scrollbar.set)
+        
+        self.safe_results_text.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        safe_scrollbar.grid(row=1, column=1, sticky=(tk.N, tk.S))
+        
+        # Configure text tags
+        self._configure_text_tags(self.safe_results_text)
+        
+        # Buttons
+        safe_buttons = ttk.Frame(self.safe_frame)
+        safe_buttons.grid(row=4, column=0, columnspan=2, pady=10)
+        
+        ttk.Button(safe_buttons, text="Save Quarantine Report", 
+                  command=lambda: self.save_report('safe')).grid(row=0, column=0, padx=(0, 10))
+        ttk.Button(safe_buttons, text="Clear Results", 
+                  command=self.clear_safe_results).grid(row=0, column=1, padx=(0, 10))
+        ttk.Button(safe_buttons, text="Refresh Networks", 
+                  command=self.run_safe_discovery).grid(row=0, column=2, padx=(0, 10))
+        ttk.Button(safe_buttons, text="Log Network Details", 
+                  command=self.log_current_network).grid(row=0, column=3)
+        
+        # Configure weights
+        self.safe_frame.columnconfigure(0, weight=1)
+        self.safe_frame.columnconfigure(1, weight=1)
+        self.safe_frame.rowconfigure(3, weight=1)
+        networks_frame.columnconfigure(0, weight=1)
+        networks_frame.rowconfigure(0, weight=1)
         results_frame.columnconfigure(0, weight=1)
         results_frame.rowconfigure(1, weight=1)
         
@@ -482,27 +631,30 @@ class WiFiSecurityTool:
         help_text = """
 WiFi Sprite - WiFi Security Analyzer
 
-This tool analyzes your current WiFi connection for security risks.
+Tabs:
+• Simple Test - Analyze current connection
+• Advanced Test - Deep security analysis
+• Safe Scan - Analyze nearby networks WITHOUT connecting
+
+Safe Scan Mode:
+• Discovers nearby open WiFi networks
+• Analyzes without connecting (quarantined analysis)
+• Detects ESP32/Arduino honeypots and fake access points
+• Provides safety recommendations before connection
 
 Features:
 • Encryption detection (WEP/WPA/WPA2/WPA3)
+• Honeypot and fake AP detection
+• ESP32/Arduino device identification
 • Risk assessment with color-coded ratings
 • Captive portal detection
-• Educational security explanations
 
-Usage:
-1. Connect to a WiFi network
-2. Click 'Analyze Current Network'
-3. Review the security report
-4. Save reports for reference
+Safety Ratings:
+🚨 DANGEROUS - Do not connect
+⚠️ SUSPICIOUS - Use extreme caution
+✅ RELATIVELY SAFE - Monitor connection
 
-Security Ratings:
-🔴 HIGH RISK - Avoid sensitive activities
-🟠 MEDIUM RISK - Use VPN, be cautious  
-🟡 LOW RISK - Generally safe with precautions
-🟢 MINIMAL RISK - Secure network
-
-This tool is for educational purposes only.
+This tool is for educational and defensive purposes only.
 Use responsibly and ethically.
         """
         messagebox.showinfo("Help - WiFi Sprite", help_text)
@@ -608,6 +760,12 @@ Use responsibly and ethically.
                 return
             analysis_data = self.current_simple_analysis
             prefix = "basic"
+        elif report_type == 'safe':
+            if not hasattr(self, 'current_safe_analysis'):
+                messagebox.showwarning("No Report", "No safe scan report to save.")
+                return
+            analysis_data = self.current_safe_analysis
+            prefix = "safe_scan"
         else:
             if not hasattr(self, 'current_advanced_analysis'):
                 messagebox.showwarning("No Report", "No advanced analysis report to save.")
@@ -697,6 +855,244 @@ Use responsibly and ethically.
         
         # Scroll to top
         text_widget.see(tk.INSERT)
+    
+    def run_safe_discovery(self):
+        """Run safe network discovery"""
+        self.safe_scan_button.config(state='disabled')
+        self.safe_progress.start()
+        
+        thread = threading.Thread(target=self._perform_safe_discovery)
+        thread.daemon = True
+        thread.start()
+    
+    def _perform_safe_discovery(self):
+        """Perform safe network discovery in background"""
+        try:
+            networks = self.safe_scanner.discover_nearby_networks()
+            self._update_networks_list_safe(networks)
+        except Exception as e:
+            self._update_safe_ui_safe(f"Discovery error: {str(e)}")
+        finally:
+            self._stop_safe_progress_safe()
+    
+    def _update_networks_list_safe(self, networks):
+        """Thread-safe update of networks list"""
+        self.root.after(0, lambda: self._update_networks_list(networks))
+    
+    def _update_networks_list(self, networks):
+        """Update the networks listbox"""
+        self.networks_listbox.delete(0, tk.END)
+        self.discovered_networks = networks
+        
+        if not networks:
+            self.networks_listbox.insert(tk.END, "No open networks found")
+        else:
+            for i, network in enumerate(networks):
+                ssid = network.get('ssid', 'Unknown')
+                signal = network.get('signal_strength', 0)
+                display_text = f"{ssid} (Signal: {signal}%)"
+                self.networks_listbox.insert(tk.END, display_text)
+    
+    def analyze_selected_network(self):
+        """Analyze the selected network safely"""
+        selection = self.networks_listbox.curselection()
+        if not selection:
+            messagebox.showwarning("No Selection", "Please select a network to analyze.")
+            return
+        
+        if not hasattr(self, 'discovered_networks') or not self.discovered_networks:
+            messagebox.showwarning("No Networks", "No networks available. Run discovery first.")
+            return
+        
+        network_index = selection[0]
+        if network_index >= len(self.discovered_networks):
+            return
+        
+        selected_network = self.discovered_networks[network_index]
+        
+        # Run analysis in background
+        thread = threading.Thread(target=self._perform_safe_analysis, args=(selected_network,))
+        thread.daemon = True
+        thread.start()
+    
+    def _perform_safe_analysis(self, network):
+        """Perform safe analysis of selected network"""
+        try:
+            analysis = self.safe_scanner.analyze_network_safely(network)
+            report = self.safe_scanner.get_quarantine_report(network)
+            
+            self._update_safe_results_safe(network, analysis, report)
+        except Exception as e:
+            self._update_safe_ui_safe(f"Analysis error: {str(e)}")
+    
+    def _update_safe_results_safe(self, network, analysis, report):
+        """Thread-safe update of safe scan results"""
+        self.root.after(0, lambda: self._update_safe_results(network, analysis, report))
+    
+    def _update_safe_results(self, network, analysis, report):
+        """Update safe scan results display"""
+        status = analysis.get('quarantine_status', 'Unknown')
+        safety_score = analysis.get('safety_score', 0)
+        
+        # Update status with color coding
+        if 'DANGEROUS' in status:
+            color = '#ff4444'
+        elif 'SUSPICIOUS' in status:
+            color = '#ff8800'
+        else:
+            color = '#88dd88'
+        
+        self.safe_status_label.config(text=f"{status} (Score: {safety_score}/100)", 
+                                     foreground=color)
+        
+        # Update results text
+        self.safe_results_text.delete(1.0, tk.END)
+        self._insert_colored_report(self.safe_results_text, report, status)
+        
+        # Store for saving
+        self.current_safe_analysis = {
+            'network': network,
+            'analysis': analysis,
+            'report': report
+        }
+        
+        # Store current network for logging
+        self.current_network_for_log = {'network': network, 'analysis': analysis}
+    
+    def _update_safe_ui_safe(self, message):
+        """Thread-safe safe scan UI update"""
+        self.root.after(0, lambda: self._update_safe_ui(message))
+    
+    def _update_safe_ui(self, message):
+        """Update safe scan UI with message"""
+        self.safe_results_text.delete(1.0, tk.END)
+        self.safe_results_text.insert(tk.END, message)
+    
+    def _stop_safe_progress_safe(self):
+        """Thread-safe stop safe progress"""
+        self.root.after(0, self._stop_safe_progress)
+    
+    def _stop_safe_progress(self):
+        """Stop safe scan progress"""
+        self.safe_progress.stop()
+        self.safe_scan_button.config(state='normal')
+    
+    def clear_safe_results(self):
+        """Clear safe scan results"""
+        self.safe_results_text.delete(1.0, tk.END)
+        self.safe_status_label.config(text="No Analysis Performed", foreground='#ffffff')
+        self.networks_listbox.delete(0, tk.END)
+        if hasattr(self, 'current_safe_analysis'):
+            del self.current_safe_analysis
+        if hasattr(self, 'discovered_networks'):
+            del self.discovered_networks
+    
+    def setup_log_tab(self):
+        """Setup the network log tab"""
+        # Info frame
+        info_frame = ttk.LabelFrame(self.log_frame, text="Network Logging", padding="10")
+        info_frame.grid(row=0, column=0, columnspan=2, sticky=(tk.W, tk.E), padx=10, pady=5)
+        
+        info_text = "Log and track potentially dangerous WiFi networks with MAC addresses and locations."
+        ttk.Label(info_frame, text=info_text, wraplength=600).grid(row=0, column=0, sticky=tk.W)
+        
+        # Controls frame
+        controls_frame = ttk.Frame(self.log_frame)
+        controls_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=5)
+        
+        ttk.Button(controls_frame, text="Refresh Log", 
+                  command=self.refresh_network_log).grid(row=0, column=0, padx=(0, 10))
+        ttk.Button(controls_frame, text="Clear All Logs", 
+                  command=self.clear_network_log).grid(row=0, column=1, padx=(0, 10))
+        ttk.Button(controls_frame, text="Export Log", 
+                  command=self.export_network_log).grid(row=0, column=2)
+        
+        # Log display frame
+        log_display_frame = ttk.LabelFrame(self.log_frame, text="Logged Networks", padding="10")
+        log_display_frame.grid(row=2, column=0, columnspan=2, sticky=(tk.W, tk.E, tk.N, tk.S), padx=10, pady=5)
+        
+        # Log text widget
+        self.log_text = tk.Text(log_display_frame, height=20, width=80,
+                               bg='#1e1e1e', fg='#ffffff',
+                               insertbackground='#ffffff',
+                               selectbackground='#0078d4',
+                               font=('Consolas', 9),
+                               wrap=tk.WORD)
+        
+        log_scrollbar = ttk.Scrollbar(log_display_frame, orient=tk.VERTICAL, command=self.log_text.yview)
+        self.log_text.configure(yscrollcommand=log_scrollbar.set)
+        
+        self.log_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        log_scrollbar.grid(row=0, column=1, sticky=(tk.N, tk.S))
+        
+        # Configure text tags
+        self._configure_text_tags(self.log_text)
+        
+        # Configure weights
+        self.log_frame.columnconfigure(0, weight=1)
+        self.log_frame.rowconfigure(2, weight=1)
+        log_display_frame.columnconfigure(0, weight=1)
+        log_display_frame.rowconfigure(0, weight=1)
+        
+        # Load initial log (safely)
+        try:
+            self.refresh_network_log()
+        except:
+            self.log_text.insert(tk.END, "Network log will be available after first scan.")
+    
+    def log_current_network(self):
+        """Log the currently analyzed network"""
+        if not hasattr(self, 'current_network_for_log'):
+            messagebox.showwarning("No Network", "No network analyzed. Please analyze a network first.")
+            return
+        
+        network = self.current_network_for_log['network']
+        analysis = self.current_network_for_log['analysis']
+        
+        if self.safe_scanner.log_threat(network, analysis):
+            messagebox.showinfo("Network Logged", f"Network '{network.get('ssid', 'Unknown')}' has been logged.")
+            self.refresh_network_log()
+        else:
+            messagebox.showinfo("Already Logged", "This network is already in the log or doesn't meet logging criteria.")
+    
+    def refresh_network_log(self):
+        """Refresh the network log display"""
+        try:
+            log_content = self.safe_scanner.get_threat_summary()
+            self.log_text.delete(1.0, tk.END)
+            self.log_text.insert(tk.END, log_content)
+        except Exception as e:
+            self.log_text.delete(1.0, tk.END)
+            self.log_text.insert(tk.END, f"Error loading log: {str(e)}")
+    
+    def clear_network_log(self):
+        """Clear all network logs"""
+        result = messagebox.askyesno("Clear Logs", "Are you sure you want to clear all network logs?")
+        if result:
+            try:
+                self.safe_scanner.threats = []
+                self.safe_scanner._save_threats()
+                self.refresh_network_log()
+                messagebox.showinfo("Logs Cleared", "All network logs have been cleared.")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to clear logs: {str(e)}")
+    
+    def export_network_log(self):
+        """Export network log to file"""
+        try:
+            if not self.safe_scanner.threats:
+                messagebox.showinfo("No Data", "No networks logged to export.")
+                return
+                
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"network_log_export_{timestamp}.json"
+            
+            with open(filename, 'w') as f:
+                json.dump(self.safe_scanner.threats, f, indent=2)
+            
+            messagebox.showinfo("Export Complete", f"Network log exported to: {filename}")
+        except Exception as e:
+            messagebox.showerror("Export Error", f"Failed to export log: {str(e)}")
 
 def main():
     """Main entry point for the application"""

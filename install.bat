@@ -15,9 +15,7 @@ echo Installing dependencies...
 pip install -r requirements.txt
 
 echo.
-echo Installing WiFi Sprite as system utility...
-pip install -e .
-
+    
 echo.
 echo Installation complete!
 echo You can now run: wifi-sprite
