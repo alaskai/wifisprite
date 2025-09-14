@@ -99,5 +99,41 @@ class NetworkScanner:
     
     def get_current_network(self) -> Optional[Dict]:
         """Get information about currently connected network"""
-        networks = self._scan_visible_networks()
-        return networks[0] if networks else None
+        try:
+            result = subprocess.run(['netsh', 'wlan', 'show', 'interfaces'], 
+                                  capture_output=True, text=True, check=True)
+            
+            network_info = {
+                'ssid': 'Unknown',
+                'bssid': 'Unknown', 
+                'authentication': 'Unknown',
+                'encryption': 'Unknown',
+                'signal_strength': 0,
+                'channel': 0
+            }
+            
+            for line in result.stdout.split('\n'):
+                line = line.strip()
+                if 'SSID' in line and ':' in line:
+                    ssid = line.split(':', 1)[1].strip()
+                    if ssid:
+                        network_info['ssid'] = ssid
+                elif 'BSSID' in line and ':' in line:
+                    network_info['bssid'] = line.split(':', 1)[1].strip()
+                elif 'Signal' in line:
+                    signal = re.search(r'(\d+)%', line)
+                    if signal:
+                        network_info['signal_strength'] = int(signal.group(1))
+                elif 'Channel' in line:
+                    channel = re.search(r'(\d+)', line.split(':', 1)[1])
+                    if channel:
+                        network_info['channel'] = int(channel.group(1))
+                elif 'Authentication' in line:
+                    network_info['authentication'] = line.split(':', 1)[1].strip()
+                elif 'Cipher' in line:
+                    network_info['encryption'] = line.split(':', 1)[1].strip()
+            
+            return network_info if network_info['ssid'] != 'Unknown' else None
+            
+        except subprocess.CalledProcessError:
+            return None

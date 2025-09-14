@@ -208,7 +208,7 @@ Scenario: Office WiFi security check
 ## 🎥 Demo
 
 Check out the comprehensive demonstrations:
-- [Demo Video](../demo/demo.mp4) - Complete walkthrough of all features
+- [Demo Video](../demo/demo-no-audio.mp4) - Complete walkthrough of all features
 - [Demo Presentation](../demo/demo.pptx) - Technical overview and use cases
 - [Demo Overview](../demo/OVERVIEW.md) - Written summary of capabilities
 
