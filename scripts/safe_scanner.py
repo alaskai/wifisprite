@@ -6,12 +6,17 @@ from typing import List, Dict, Optional
 from scapy.all import *
 import threading
 import json
+import requests
+from datetime import datetime
+import os
 
 class SafeScanner:
     def __init__(self):
         self.discovered_networks = []
         self.quarantine_results = {}
         self.scanning = False
+        self.threat_log_file = "dangerous_networks.json"
+        self.threats = self._load_threats()
         
     def discover_nearby_networks(self, scan_duration=10) -> List[Dict]:
         """Passively discover nearby WiFi networks without connecting"""
@@ -336,3 +341,79 @@ RISK ANALYSIS:
         report += f"\n=== END QUARANTINE REPORT ===\n"
         
         return report
+    
+    def _load_threats(self):
+        """Load existing threat log"""
+        if os.path.exists(self.threat_log_file):
+            try:
+                with open(self.threat_log_file, 'r') as f:
+                    return json.load(f)
+            except:
+                pass
+        return []
+    
+    def _save_threats(self):
+        """Save threats to file"""
+        with open(self.threat_log_file, 'w') as f:
+            json.dump(self.threats, f, indent=2)
+    
+    def _get_mac_address(self, ssid):
+        """Get MAC address for network"""
+        try:
+            result = subprocess.run(['netsh', 'wlan', 'show', 'profiles', ssid, 'key=clear'], 
+                                  capture_output=True, text=True)
+            for line in result.stdout.split('\n'):
+                if 'BSSID' in line or 'MAC' in line:
+                    parts = line.split(':')
+                    if len(parts) > 1:
+                        return parts[1].strip()
+        except:
+            pass
+        return "Unknown"
+    
+    def _get_location(self):
+        """Get approximate location"""
+        try:
+            response = requests.get('http://ipapi.co/json/', timeout=5)
+            data = response.json()
+            return f"{data.get('city', 'Unknown')}, {data.get('region', 'Unknown')}"
+        except:
+            return "Location unavailable"
+    
+    def log_threat(self, network, analysis):
+        """Log a dangerous network"""
+        threat = {
+            'ssid': network.get('ssid', 'Unknown'),
+            'mac_address': self._get_mac_address(network.get('ssid', '')),
+            'location': self._get_location(),
+            'timestamp': datetime.now().isoformat(),
+            'safety_score': analysis.get('safety_score', 0),
+            'status': analysis.get('quarantine_status', ''),
+            'indicators': analysis.get('esp32_indicators', []),
+            'signal_strength': network.get('signal_strength', 0)
+        }
+        
+        # Check if already logged (avoid duplicates)
+        existing = next((t for t in self.threats if t['ssid'] == threat['ssid'] and t['mac_address'] == threat['mac_address']), None)
+        if not existing:
+            self.threats.append(threat)
+            self._save_threats()
+            return True
+        return False
+    
+    def get_threat_summary(self):
+        """Get summary of logged threats"""
+        if not self.threats:
+            return "No networks logged yet.\n\nUse Safe Scan to analyze networks, then click 'Log Network Details' to add them here."
+        
+        summary = f"=== NETWORK LOG SUMMARY ===\n"
+        summary += f"Total networks logged: {len(self.threats)}\n\n"
+        
+        for i, threat in enumerate(self.threats, 1):
+            summary += f"{i}. {threat['ssid']} ({threat['mac_address']})\n"
+            summary += f"   Location: {threat['location']}\n"
+            summary += f"   Status: {threat['status']}\n"
+            summary += f"   Safety Score: {threat['safety_score']}/100\n"
+            summary += f"   Date: {threat['timestamp'][:10]}\n\n"
+        
+        return summary
