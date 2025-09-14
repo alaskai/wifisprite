@@ -36,6 +36,20 @@ WiFi Sprite provides advanced network security analysis to protect users from so
 - **📊 Risk Scoring**: 0-100 safety score with detailed recommendations
 - **🛡️ Zero-Risk Assessment**: Complete analysis without network exposure
 
+### 📋 **Network Logging System** *(NEW)*
+- **📝 Multi-Scan Logging**: Log networks from Simple, Advanced, or Safe Scan modes
+- **📍 Location Tracking**: Automatic geolocation of discovered threats
+- **🔍 MAC Address Collection**: Hardware identification for threat tracking
+- **📄 Organized Reports**: Separate sections for each scan type
+- **📊 Export Functionality**: JSON export for threat intelligence sharing
+
+### 🏆 **Security Score & Gamification** *(NEW)*
+- **🎯 Point System**: Earn points for scanning networks and logging threats
+- **🏆 Achievement System**: Unlock badges for security milestones
+- **🔄 Level Progression**: 10 levels from Novice to Guardian
+- **📊 Progress Tracking**: Statistics on scans performed and threats found
+- **🏅 Persistent Scoring**: Local score storage and achievement tracking
+
 ### 🎨 **Professional Interface**
 - **Dark Theme**: Modern, professional appearance
 - **Colored Reports**: Syntax-highlighted security analysis
@@ -85,7 +99,7 @@ run.bat
 - **Port Vulnerabilities**: Dangerous services and backdoors
 - **Network Surveillance**: Traffic monitoring detection
 
-### **Risk Assessment**
+### **Risk Assessment & Scoring**
 - 🚨 **DANGEROUS**: Do not connect - likely honeypot/fake AP
 - ⚠️ **SUSPICIOUS**: Use extreme caution - multiple risk indicators
 - ✅ **RELATIVELY SAFE**: Monitor connection - standard precautions
@@ -94,6 +108,12 @@ run.bat
 - 🟡 **MEDIUM**: Caution advised - use VPN
 - 🟢 **LOW**: Generally safe with precautions
 - 🟢 **MINIMAL**: Secure network
+
+### **Gamification Rewards**
+- **+10 points**: Scanning safe networks (70+ safety score)
+- **+15 points**: Scanning suspicious networks (30-69 safety score)
+- **+25 points**: Detecting dangerous networks (<30 safety score)
+- **+50 points**: Logging threats to the database
 
 ## 📊 Sample Advanced Report
 
@@ -137,17 +157,30 @@ SECURITY RECOMMENDATIONS:
 
 ```
 src/
-├── main.py                     # Main GUI application
+├── main.py                     # Main GUI application with 5 tabs
 └── scripts/
     ├── network_scanner.py      # WiFi network detection
     ├── security_analyzer.py    # Basic security analysis
+    ├── safe_scanner.py         # Safe scan & threat logging
     ├── honeypot_detector.py    # Advanced honeypot detection
     ├── host_scanner.py         # Network host discovery
     ├── ssl_analyzer.py         # SSL/TLS security analysis
     ├── dns_analyzer.py         # DNS security testing
     ├── port_scanner.py         # Port security scanning
     └── report_generator.py     # Report generation
+
+Data Files:
+├── dangerous_networks.json     # Logged threat database
+└── security_score.json         # User progress & achievements
 ```
+
+## 🎮 User Interface Tabs
+
+1. **📊 Simple Test** - Basic WiFi security analysis
+2. **🚀 Advanced Test** - Comprehensive security testing
+3. **🛡️ Safe Scan** - Passive analysis without connecting
+4. **📋 Network Log** - View and manage logged networks
+5. **🏆 Security Score** - Gamification progress and achievements
 
 ## 🌍 South African Context
 
@@ -161,6 +194,8 @@ src/
 - **ISP Detection**: Identifies major SA internet providers
 - **DNS Server Analysis**: Tests against local DNS providers
 - **Regulatory Compliance**: Aligns with POPIA privacy requirements
+- **Threat Intelligence**: Build local database of dangerous networks
+- **Community Protection**: Share threat data responsibly
 
 ## ⚖️ Legal & Ethical Use
 
@@ -194,3 +229,24 @@ This project is licensed for educational and defensive security purposes. Users 
 WiFi Sprite is designed exclusively for educational and defensive cybersecurity purposes. Users are responsible for ensuring compliance with applicable laws, including South African cybersecurity regulations. The tool performs only passive analysis and does not attempt to compromise or attack networks.
 
 **Use responsibly. Protect yourself and others.**
+
+---
+
+## 🎆 Latest Updates
+
+### Version 2.0 - Enhanced Security & Gamification
+- ✨ **Safe Scan Mode**: Analyze networks without connecting
+- 📋 **Network Logging**: Track dangerous networks with location data
+- 🏆 **Gamification**: Security score system with achievements
+- 🔍 **Multi-Scan Logging**: Log from all scan types
+- 🎨 **Enhanced UI**: Professional dark theme with colored reports
+- 📍 **Threat Intelligence**: Build personal threat database
+
+### Key Achievements Available
+- 🏆 **First Scan** - Complete your first network analysis
+- 🏆 **Threat Hunter** - Log your first dangerous network
+- 🏆 **Security Expert** - Log 5 dangerous networks
+- 🏆 **Network Scout** - Scan 10 networks
+- 🏆 **WiFi Warrior** - Scan 50 networks
+
+**Level up from Novice to Guardian as you protect your digital environment!**
