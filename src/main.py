@@ -281,10 +281,46 @@ class WiFiSecurityTool:
         ttk.Checkbutton(control_frame, text="Port Security Scanning", 
                        variable=self.port_scan_var).grid(row=4, column=0, sticky=tk.W)
         
+        # Advanced options frame
+        options_frame = ttk.LabelFrame(control_frame, text="Advanced Options", padding="5")
+        options_frame.grid(row=5, column=0, columnspan=2, sticky=(tk.W, tk.E), pady=(10, 0))
+        
+        # Port scan timeout
+        ttk.Label(options_frame, text="Port Scan Timeout (seconds):").grid(row=0, column=0, sticky=tk.W)
+        self.port_timeout_var = tk.StringVar(value="3")
+        port_timeout_spin = ttk.Spinbox(options_frame, from_=1, to=30, width=5, textvariable=self.port_timeout_var)
+        port_timeout_spin.grid(row=0, column=1, padx=(5, 0), sticky=tk.W)
+        
+        # Host scan range
+        ttk.Label(options_frame, text="Host Scan Range:").grid(row=1, column=0, sticky=tk.W)
+        self.host_range_var = tk.StringVar(value="24")
+        host_range_combo = ttk.Combobox(options_frame, width=8, textvariable=self.host_range_var, 
+                                       values=["24", "16", "8"], state="readonly")
+        host_range_combo.grid(row=1, column=1, padx=(5, 0), sticky=tk.W)
+        
+        # SSL timeout
+        ttk.Label(options_frame, text="SSL Test Timeout (seconds):").grid(row=2, column=0, sticky=tk.W)
+        self.ssl_timeout_var = tk.StringVar(value="5")
+        ssl_timeout_spin = ttk.Spinbox(options_frame, from_=3, to=15, width=5, textvariable=self.ssl_timeout_var)
+        ssl_timeout_spin.grid(row=2, column=1, padx=(5, 0), sticky=tk.W)
+        
+        # DNS test count
+        ttk.Label(options_frame, text="DNS Test Iterations:").grid(row=0, column=2, padx=(20, 0), sticky=tk.W)
+        self.dns_count_var = tk.StringVar(value="3")
+        dns_count_spin = ttk.Spinbox(options_frame, from_=1, to=10, width=5, textvariable=self.dns_count_var)
+        dns_count_spin.grid(row=0, column=3, padx=(5, 0), sticky=tk.W)
+        
+        # Honeypot sensitivity
+        ttk.Label(options_frame, text="Honeypot Sensitivity:").grid(row=1, column=2, padx=(20, 0), sticky=tk.W)
+        self.honeypot_sensitivity_var = tk.StringVar(value="Normal")
+        sensitivity_combo = ttk.Combobox(options_frame, width=8, textvariable=self.honeypot_sensitivity_var,
+                                        values=["Low", "Normal", "High"], state="readonly")
+        sensitivity_combo.grid(row=1, column=3, padx=(5, 0), sticky=tk.W)
+        
         # Scan button
         self.advanced_scan_button = ttk.Button(control_frame, text="Run Advanced Security Scan", 
                                              command=self.run_advanced_scan)
-        self.advanced_scan_button.grid(row=5, column=0, pady=(10, 0))
+        self.advanced_scan_button.grid(row=6, column=0, pady=(10, 0))
         
         # Progress bar
         self.advanced_progress = ttk.Progressbar(self.advanced_frame, mode='indeterminate')
@@ -791,10 +827,10 @@ Use responsibly and ethically.
         except Exception as e:
             messagebox.showerror("Save Error", f"Failed to save report: {str(e)}")
     
-    def _perform_ssl_analysis(self):
+    def _perform_ssl_analysis(self, timeout=5):
         """Perform SSL/TLS security analysis"""
         try:
-            return self.ssl_analyzer.analyze_ssl_security()
+            return self.ssl_analyzer.analyze_ssl_security(timeout=timeout)
         except Exception as e:
             return {
                 'error': str(e),
@@ -804,10 +840,10 @@ Use responsibly and ethically.
                 'recommendations': ['SSL analysis failed - check network connection']
             }
     
-    def _perform_dns_analysis(self):
+    def _perform_dns_analysis(self, iterations=3):
         """Perform DNS security analysis"""
         try:
-            return self.dns_analyzer.analyze_dns_security()
+            return self.dns_analyzer.analyze_dns_security(iterations=iterations)
         except Exception as e:
             return {
                 'error': str(e),
@@ -818,10 +854,10 @@ Use responsibly and ethically.
                 'recommendations': ['DNS analysis failed - check network connection']
             }
     
-    def _perform_port_analysis(self):
+    def _perform_port_analysis(self, timeout=3):
         """Perform port security analysis"""
         try:
-            return self.port_scanner.scan_network_ports(scan_type='common', timeout=1)
+            return self.port_scanner.scan_network_ports(scan_type='common', timeout=timeout)
         except Exception as e:
             return {
                 'error': str(e),

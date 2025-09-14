@@ -46,18 +46,43 @@ class SecurityAnalyzer:
         authentication = network_info.get('authentication', '').upper()
         
         analysis = {
-            'type': encryption,
+            'type': encryption if encryption != 'UNKNOWN' else 'Unknown',
             'strength': 'UNKNOWN',
             'risk_points': 0,
             'issues': [],
             'description': ''
         }
         
-        if not encryption or encryption == 'NONE' or 'OPEN' in authentication:
-            analysis['strength'] = 'NONE'
-            analysis['risk_points'] = 100
-            analysis['issues'].append('No encryption - all data transmitted in plain text')
-            analysis['description'] = 'Open network with no security'
+        # Handle unknown encryption by checking authentication
+        if encryption == 'UNKNOWN' or not encryption:
+            if 'WPA3' in authentication:
+                encryption = 'WPA3'
+                analysis['type'] = 'WPA3'
+            elif 'WPA2' in authentication:
+                encryption = 'WPA2'
+                analysis['type'] = 'WPA2'
+            elif 'WPA' in authentication:
+                encryption = 'WPA'
+                analysis['type'] = 'WPA'
+            elif 'WEP' in authentication:
+                encryption = 'WEP'
+                analysis['type'] = 'WEP'
+            elif 'OPEN' in authentication or 'NONE' in authentication:
+                encryption = 'NONE'
+                analysis['type'] = 'None'
+        
+        # Analyze encryption strength
+        if not encryption or encryption == 'NONE' or encryption == 'UNKNOWN' or 'OPEN' in authentication:
+            if encryption == 'UNKNOWN':
+                analysis['strength'] = 'UNKNOWN'
+                analysis['risk_points'] = 40
+                analysis['issues'].append('Unable to determine encryption type - proceed with caution')
+                analysis['description'] = 'Encryption type could not be determined'
+            else:
+                analysis['strength'] = 'NONE'
+                analysis['risk_points'] = 100
+                analysis['issues'].append('No encryption - all data transmitted in plain text')
+                analysis['description'] = 'Open network with no security'
             
         elif 'WEP' in encryption:
             analysis['strength'] = 'VERY_WEAK'
