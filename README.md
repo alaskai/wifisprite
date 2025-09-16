@@ -61,7 +61,7 @@ WiFi Sprite provides advanced network security analysis to protect users from so
 ### **Option 1: One-Click Install (Recommended)**
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/wifi-sprite.git
+git clone https://github.com/alaskai/wifisprite.git
 cd wifi-sprite
 
 # Run the installer
